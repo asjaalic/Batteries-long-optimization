@@ -1,0 +1,38 @@
+# Set input
+    # from .in file, else from jld file
+    setInputParameters = true
+
+    # from input files, else from jld inputhpath
+    batterySystemFromFile = true
+
+    # Make new, else from jld file
+    createMarkovModel = true
+
+    drawScenarios = true		
+    drawOutofSampleScen = false
+    # from previous result files
+    useScenariosFromDataStorage = false
+    # from input file
+    useHistoricScen = false
+
+    battery_replacement = false
+    excel_savings = false
+
+# Solver settings
+    solveMIP = true
+    #If using SOS2
+
+# SDP settings
+    solveSDP = true
+    #useWaterValues = false
+    #Option to save results from each time decision problem is solved in SDP
+    DebugSP = false
+
+# SIM settings
+    dynamicProgramming = true
+    simulate = false
+    parallellSim = false
+
+    
+
+  

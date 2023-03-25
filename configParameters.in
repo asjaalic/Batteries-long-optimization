@@ -1,0 +1,21 @@
+
+#problem definition
+    NSteps = 87600
+    NHoursStep = 1
+
+#SDP parameters
+    #conv = 0.001
+    #MaxIt = 100
+
+#number of simulation scenarios
+    #NSimScen = 100
+
+#Scenario lattice
+    #numbers of samples from which scenario lattice
+    #NSamples = 10000
+    #number of states in scenario/state lattice
+    #NStates = 5
+
+#General
+    Big = 1E16
+
