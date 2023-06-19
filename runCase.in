@@ -1,6 +1,6 @@
-DataPath = C:\\Users\\Utente\\Desktop\\Batteries
-InputPath = C:\\Users\\Utente\\Desktop\\Batteries
-ResultPath = C:\\Users\\Utente\\Desktop\\Batteries
+DataPath = C:\\GitSource-Batteries\\Batteries-long-optimization
+InputPath = C:\\GitSource-Batteries\\Batteries-long-optimization
+ResultPath = C:\\GitSource-Batteries\\Batteries-long-optimization
 #ending to case name 
 CaseName = _Version_12.2022
 

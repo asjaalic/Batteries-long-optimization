@@ -124,18 +124,22 @@ function read_parameters_from_config_file(file = "configParameters.in")
 
   #paramDict = read_type_to_dict(file,Number)
   paramDict = read_type_to_dict(file, Any)
-  println("Parameters to be used:", paramDict)
-
-  integers =[:NSteps]
+  
+  integers =[:NYears :NMonths]
   paramDict = set_integers!(paramDict, integers)
 
   floats =[:Big :NHoursStep]
   paramDict = set_floats!(paramDict,floats)
 
-  #paramDict[:NHoursStep] = Int(paramDict[:NHoursStage] / paramDict[:NSteps])
-  #paramDict[:NHoursStep] = (paramDict[:NHoursStage] / paramDict[:NSteps])
+
+  # scrivere codice "if" fino a quando il resto tra NYears*12/Nmonths non sia nullo - chiedere di cambiare dati
+  paramDict[:NStages] = Int(paramDict[:NYears] / paramDict[:NMonths]*12)
+  paramDict[:NSteps] = Int(paramDict[:NYears]*8760 / paramDict[:NHoursStep])
+  paramDict[:NHoursStage] = Int(paramDict[:NMonths]*730)
 
   inputData = InputParam(;paramDict...)
+
+  println("Parameters to be used:", paramDict)
 
   return inputData
 end
@@ -187,7 +191,7 @@ function set_solverParameters()
   return solverParameters
 end
 
-function define_state_variables(InputParameters::InputParam,Battery::BatteryParam)
+#=0function define_state_variables(InputParameters::InputParam,Battery::BatteryParam)
   
   @unpack (NStages,NStates,NSteps,NHoursStep) = InputParameters
   @unpack (energy_Capacity) = Battery   
@@ -200,7 +204,7 @@ function define_state_variables(InputParameters::InputParam,Battery::BatteryPara
     seg,
     maxEnergy,
     )
-end
+end =#
 
 # MODE SETTING
 function read_runMode_file(file = "runMode.in")
@@ -248,7 +252,7 @@ function read_Battery_from_file(file = "BatteryCharacteristics.in")
   paramDict = read_type_to_dict(file, Any)
   println("Parameters to be used:", paramDict)
 
-  floats =[:max_Charge :max_Discharge :energy_Capacity :Eff_charge :Eff_discharge]
+  floats =[:max_Charge :max_Discharge :energy_Capacity :Eff_charge :Eff_discharge :max_SOH]
   paramDict = set_floats!(paramDict,floats)
 
   Battery = BatteryParam(;paramDict...)
