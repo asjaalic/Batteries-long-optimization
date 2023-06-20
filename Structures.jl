@@ -77,7 +77,7 @@ struct Results
     soc_bat::Any
     cum_energy::Any
     eq_cyc::Any
-    deg::Any
+    degradation::Any
     soh_f::Any
     soh_in::Any
 end

@@ -2,8 +2,8 @@
 
 function solveOptimizationProblem(InputParameters::InputParam, SolverParameters::SolverParam, Battery::BatteryParam)
 
-    @unpack (NYears, NMonths, NStages, NSteps, Big, NHoursStep) = InputParameters
-    @unpack (max_Charge, max_Discharge, energy_Capacity, Eff_charge, Eff_discharge, max_SOH ) = Battery
+    @unpack (NYears, NMonths, NStages, NSteps, Big, NHoursStep, NHoursStage) = InputParameters;
+    @unpack (max_Charge, max_Discharge, energy_Capacity, Eff_charge, Eff_discharge, max_SOH ) = Battery;
 
     println("Solving Optimization Problem")
 
@@ -48,11 +48,11 @@ function solveOptimizationProblem(InputParameters::InputParam, SolverParameters:
         end
 
         for iStage=2:(NStages-1)
-            revenues_per_stage[iStage] = sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((iStage-1)*730+1):(730*NStages)) - Battery_price[iStage]*(soh_initial[iStage+1]-soh_final[iStage])
+            revenues_per_stage[iStage] = sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage)) - Battery_price[iStage]*(soh_initial[iStage+1]-soh_final[iStage])
         end
           
-        revenues_per_stage[1] = sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((1-1)*730+1):(730*1)) - Battery_price[1]*(soh_initial[1])
-        revenues_per_stage[NStages] = sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((NStages-1)*730+1):(730*NStages)) + Battery_price[NStages]*(soh_final[NStages])
+        revenues_per_stage[1] = sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((1-1)*NHoursStage+1):(NHoursStage*1)) - Battery_price[1]*(soh_initial[1])
+        revenues_per_stage[NStages] = sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((NStages-1)*NHoursStage+1):(NHoursStage*NStages)) + Battery_price[NStages]*(soh_final[NStages])
 
     end
 

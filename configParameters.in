@@ -1,7 +1,7 @@
 
 #problem definition
-    NYears = 5
-    NMonths = 1
+    NYears = 10
+    NMonths = 6
     NHoursStep = 1.0
 
 #General

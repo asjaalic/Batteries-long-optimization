@@ -133,9 +133,9 @@ function read_parameters_from_config_file(file = "configParameters.in")
 
 
   # scrivere codice "if" fino a quando il resto tra NYears*12/Nmonths non sia nullo - chiedere di cambiare dati
-  paramDict[:NStages] = Int(paramDict[:NYears] / paramDict[:NMonths]*12)
-  paramDict[:NSteps] = Int(paramDict[:NYears]*8760 / paramDict[:NHoursStep])
-  paramDict[:NHoursStage] = Int(paramDict[:NMonths]*730)
+  paramDict[:NStages] = Int(paramDict[:NYears]*12/paramDict[:NMonths])
+  paramDict[:NSteps] = Int(paramDict[:NYears]*8760/paramDict[:NHoursStep])
+  paramDict[:NHoursStage] = Int(paramDict[:NMonths]*730/paramDict[:NHoursStep])
 
   inputData = InputParam(;paramDict...)
 

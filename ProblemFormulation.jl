@@ -10,8 +10,8 @@ function BuildStageProblem(InputParameters::InputParam, SolverParameters::Solver
       CPX_PARAM_THREADS,
     ) = SolverParameters
   
-    @unpack (NYears, NMonths, NStages, NSteps, Big, NHoursStep) = InputParameters
-    @unpack (max_Charge, max_Discharge, energy_Capacity, Eff_charge, Eff_discharge, max_SOH ) = Battery          #MAXCharge, MAXDischarge,
+    @unpack (NYears, NMonths, NStages, NSteps, Big, NHoursStep) = InputParameters;
+    @unpack (max_Charge, max_Discharge, energy_Capacity, Eff_charge, Eff_discharge, max_SOH ) = Battery ;         #MAXCharge, MAXDischarge,
     #@unpack (maxEnergy) = state_variables
 
     M = Model(
@@ -26,16 +26,16 @@ function BuildStageProblem(InputParameters::InputParam, SolverParameters::Solver
     )
 
 
-    @variable(M, 0 <= soc[iStep=1:NSteps] <= energy_Capacity, base_name = "Energy")                # MWh   power_capacity
-    @variable(M, 0 <= charge[iStep=1:NSteps] <= max_Charge, base_name = "Charge")                       # MAXCharge  - variabile decisionale : ricarico la batteria MW
-    @variable(M, 0 <= discharge[iStep=1:NSteps] <= max_Discharge, base_name = "Discharge")                 # MAXDischarge - variabile decisionale: scarico la batteria
+    @variable(M, 0 <= soc[iStep=1:NSteps] <= energy_Capacity, base_name = "Energy")                # MWh   energy_Capacity
+    @variable(M, 0 <= charge[iStep=1:NSteps] <= energy_Capacity/Eff_charge, base_name = "Charge")                       # MAXCharge <=energy_Capacity/Eff_charge    - variabile decisionale : ricarico la batteria MW
+    @variable(M, 0 <= discharge[iStep=1:NSteps] <= energy_Capacity*Eff_charge, base_name = "Discharge")                 # MAXDischarge <=energy_Capacity*Eff_discharge - variabile decisionale: scarico la batteria
     
-    @variable(M,0<=A[iStage=1:NStages] <= Big, base_name = "Cumulative_energy")
-    @variable(M,0<=Ncycle[iStage=1:NStages] <= Big, base_name = " Equivalent cycles")
-    @variable(M, 0<= deg[iStage=1:NStages] <= Big, base_name = "Degradation")
+    @variable(M, 0 <= A[iStage=1:NStages] <= Big, base_name = "Cumulative_energy")
+    @variable(M, 0 <= Ncycle[iStage=1:NStages] <= Big, base_name = " Equivalent cycles")
+    @variable(M, 0 <= deg[iStage=1:NStages] <= Big, base_name = "Degradation")
 
-    @variable(M, energy_Capacity <= soh_final[iStage=1:NStages] <= max_SOH, base_name = "Final_Capacity")
-    @variable(M, energy_Capacity <= soh_new[iStage=1:NStages] <= max_SOH, base_name = "Initial_Capacity")
+    @variable(M, 0 <= soh_final[iStage=1:NStages] <= max_SOH, base_name = "Final_Capacity")
+    @variable(M, 0 <= soh_new[iStage=1:NStages] <= max_SOH, base_name = "Initial_Capacity")
 
     # UPDATE OJECTIVE function
 
@@ -49,18 +49,32 @@ function BuildStageProblem(InputParameters::InputParam, SolverParameters::Solver
          
     # UPDATE CONSTRAINTS
 
-    @constraint(M,energy[iStep=1:(NSteps-1)], soc[iStep] + (charge[iStep]*Eff_charge-discharge[iStep]/Eff_discharge)*NHoursStep == soc[iStep+1] )
+    @constraint(M,energy[iStep=2:NSteps], soc[iStep-1] + (charge[iStep]*Eff_charge-discharge[iStep]/Eff_discharge)*NHoursStep == soc[iStep] )
     
-    @constraint(M,cumulative[iStage=1:NStages], A[iStage] == sum((charge[iStep]*Eff_charge+discharge[iStep]/Eff_discharge)*NHoursStep for iStep=((iStage-1)*730+1):(730*iStage)) )
-
+    @constraint(M,cumulative[iStage=1:NStages], A[iStage] == sum((charge[iStep]*Eff_charge+discharge[iStep]/Eff_discharge)*NHoursStep for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage)) )
+ 
+    #@constraint(M,dis[iStage=1:NStages], (discharge[iStep] for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage)) <= soh_new[iStage]*Eff_discharge )
+    
     @constraint(M,equivalent_cycles[iStage=1:NStages], Ncycle[iStage] == A[iStage]/energy_Capacity*0.5)
 
-    @constraint(M,degradation[iStage=1:NStages], deg[iStage] == 2.5*Ncycle[iStage]-0.2)
+    @constraint(M,degradation[iStage=1:NStages], deg[iStage] == 4.3*Ncycle[iStage]-0.2)
 
-    @constraint(M,soh[iStage=1:NStages-1], soh_new[iStage+1]>= soh_final[iStage])
+    @constraint(M,soh[iStage=1:(NStages-1)], soh_new[iStage+1] >= soh_final[iStage])
 
-    @constraint(M,final_soh[iStage=1:NStages], soh_final[iStage]== soh_new[iStage]-deg[iStage])
- 
+    @constraint(M,final_soh[iStage=1:NStages], soh_final[iStage] == soh_new[iStage]-deg[iStage])
+
+    optimize!(M)
+
+    @show objective_value(M)
+
+      @show value.(A)
+      @show value.(soc)
+      @show value.(charge)
+      @show value.(discharge)
+      @show value.(Ncycle)
+      @show value.(deg)
+      @show value.(soh_new)
+      @show value.(soh_final)
   
     return BuildStageProblem(
         M,

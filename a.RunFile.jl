@@ -45,8 +45,8 @@ to = TimerOutput()
   SolverParameters = set_solverParameters()
 
   # Read power prices from a file [€/MWh]
-  Power_prices=rand(70.00:0.01:300.00,NSteps);
-  Battery_price = rand(150000:0.01:250000, NSteps);
+  Power_prices=rand(50.00:0.01:300.00,NSteps);
+  Battery_price = rand(150000:0.01:250000, NStages);
   #Power_prices = read_csv("10years_hourlyprices.csv",case.DataPath)                    # 
   #Battery_prices = read_csv("Cost_battery.csv",case.DataPath)                        # daily cost for battery replacement
   
@@ -72,7 +72,7 @@ end
 end
 
 @timeit to "Solve optimization problem" begin
-  ResultsOptimization = solveOptimizationProblem(InputParameters,SolverParameters,Battery)
+  ResultsOpt = solveOptimizationProblem(InputParameters,SolverParameters,Battery);
   #BuildStageProblem(InputParameters, SolverParameters, Battery)
   #save(joinpath(FinalResPath, "optimization_results.jld"), "optimization_results", ResultsOptimization)
 end
