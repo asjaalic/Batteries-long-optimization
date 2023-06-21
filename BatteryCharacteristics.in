@@ -1,11 +1,9 @@
 
 # characteristics and parameters
-    max_Charge = 2.0	
-    max_Discharge = 2.0
     energy_Capacity = 1.0
-    Eff_charge = 0.85
-    Eff_discharge = 0.85
-    max_SOH = 5.0
+    Eff_charge = 0.9
+    Eff_discharge = 0.9
+    max_SOH = 1.5
 
 
 

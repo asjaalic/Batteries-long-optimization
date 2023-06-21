@@ -16,8 +16,6 @@ end
 
 # Battery's characteristics
 @with_kw struct BatteryParam{F<:Float64}
-    max_Charge::F                                   # Batter's maximum capacity
-    max_Discharge::F
     energy_Capacity::F                                  # Battery's maximum energy storage capacity
     Eff_charge::F
     Eff_discharge::F
@@ -66,12 +64,14 @@ struct BuildStageProblem
     Ncycle::Any
     soh_final::Any
     soh_new::Any
-    deg::Any
+    #deg::Any
 end
 
 struct Results
     obj::Any
     rev_stage::Any
+    gain::Any
+    cost_rev::Any
     charge_bat::Any
     disc_bat::Any
     soc_bat::Any

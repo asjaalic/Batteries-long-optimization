@@ -252,7 +252,7 @@ function read_Battery_from_file(file = "BatteryCharacteristics.in")
   paramDict = read_type_to_dict(file, Any)
   println("Parameters to be used:", paramDict)
 
-  floats =[:max_Charge :max_Discharge :energy_Capacity :Eff_charge :Eff_discharge :max_SOH]
+  floats =[:energy_Capacity :Eff_charge :Eff_discharge :max_SOH]
   paramDict = set_floats!(paramDict,floats)
 
   Battery = BatteryParam(;paramDict...)
