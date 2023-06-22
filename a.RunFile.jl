@@ -45,17 +45,19 @@ to = TimerOutput()
   SolverParameters = set_solverParameters()
 
   # Read power prices from a file [€/MWh]
+  
+  #Battery_price = rand(100000:0.01:1000000, 21);
+  Battery_price = read_csv("Battery_prices_high_variation.csv",case.DataPath)
+  #Battery_price = read_csv("Battery_prices_low_variation.csv",case.DataPath)
+
   #Power_prices=rand(50.00:0.01:300.00,NSteps);
-  Battery_price = rand(200000:0.01:300000, NStages);
   Pp20 = read_csv("prices_2020_8760.csv", case.DataPath);
   Pp21 = read_csv("prices_2021_8760.csv", case.DataPath);
   Pp22 = read_csv("prices_2022_8760.csv", case.DataPath);
-  Pp4 = fill(50,NHoursStage)
-  Pp5 = rand(50.00:0.01:300, NHoursStage)
+  Pp4 = fill(50,NHoursStage);
+  Pp5 = rand(50.00:0.01:300, NHoursStage);
   #Power_prices = vcat(Pp22',Pp21',Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20');
-  Power_prices = vcat(Pp22',Pp21',Pp20',Pp21',Pp4,Pp5,Pp21',Pp21',Pp22',Pp20',Pp21')
-  
-  #Battery_prices = read_csv("Cost_battery.csv",case.DataPath)                        # daily cost for battery replacement
+  Power_prices = vcat(Pp22',Pp21[1:4380],Pp4,Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20')
   
   # Upload battery's characteristics
   Battery = set_battery_system(runMode, case)
@@ -81,7 +83,7 @@ end
 @timeit to "Solve optimization problem" begin
   ResultsOpt = solveOptimizationProblem(InputParameters,SolverParameters,Battery);
   #BuildStageProblem(InputParameters, SolverParameters, Battery)
-  #save(joinpath(FinalResPath, "optimization_results.jld"), "optimization_results", ResultsOptimization)
+  save(joinpath(FinalResPath, "optimization_results.jld"), "optimization_results", ResultsOpt)
 end
 
 

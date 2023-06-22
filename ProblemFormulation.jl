@@ -55,7 +55,7 @@ function BuildStageProblem(InputParameters::InputParam, SolverParameters::Solver
  
     #@constraint(M,dis[iStage=1:NStages], (discharge[iStep] for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage)) <= soh_new[iStage]*Eff_discharge )
     
-    @constraint(M,equivalent_cycles[iStage=1:NStages], Ncycle[iStage] == A[iStage]/energy_Capacity*0.5)
+    @constraint(M,equivalent_cycles[iStage=1:NStages], Ncycle[iStage] == A[iStage]/energy_Capacity*0.5)  #(energy_Capacity+SOH_max)/2
 
    # @constraint(M,degradation[iStage=1:NStages], deg[iStage] == Ncycle[iStage]*0.000149)
 

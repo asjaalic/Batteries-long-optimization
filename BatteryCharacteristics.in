@@ -3,7 +3,7 @@
     energy_Capacity = 1.0
     Eff_charge = 0.9
     Eff_discharge = 0.9
-    max_SOH = 1.5
+    max_SOH = 1.2
 
 
 

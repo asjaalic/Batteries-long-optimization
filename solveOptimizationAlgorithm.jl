@@ -48,7 +48,7 @@ function solveOptimizationProblem(InputParameters::InputParam, SolverParameters:
             soh_initial[iStage] = JuMP.value(problem.soh_new[iStage])
         end
 
-        for iStage=2:NStages
+        for iStage=2:(NStages-1)
             revenues_per_stage[iStage] = sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage)) - Battery_price[iStage]*(soh_initial[iStage]-soh_final[iStage-1])
             gain_stage[iStage] = sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage))
             cost_rev[iStage] = Battery_price[iStage]*(soh_initial[iStage]-soh_final[iStage-1])
@@ -58,9 +58,9 @@ function solveOptimizationProblem(InputParameters::InputParam, SolverParameters:
         gain_stage[1]= sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((1-1)*NHoursStage+1):(NHoursStage*1))
         cost_rev[1] = Battery_price[1]*(soh_initial[1]-energy_Capacity)
         
-        revenues_per_stage[end] = sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((NStages-1)*NHoursStage+1):(NHoursStage*NStages)) + Battery_price[NStages]*(soh_final[end]-energy_Capacity)
+        revenues_per_stage[end] = sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((NStages-1)*NHoursStage+1):(NHoursStage*NStages)) + Battery_price[end]*(soh_final[end]-energy_Capacity)-Battery_price[end-1]*(soh_initial[end]-soh_final[end-1])
         gain_stage[end]= sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((NStages-1)*NHoursStage+1):(NHoursStage*NStages))
-        cost_rev[end] = -Battery_price[end]*(soh_final[end]-energy_Capacity)
+        cost_rev[end] = -Battery_price[end]*(soh_final[end]-energy_Capacity) + Battery_price[end-1]*(soh_initial[end]-soh_final[end-1])
     end
 
     println("Optimization finished")
