@@ -1,9 +1,12 @@
 
 # characteristics and parameters
-    energy_Capacity = 1.0
+    energy_Capacity = 10
     Eff_charge = 0.9
     Eff_discharge = 0.9
-    max_SOH = 1.2
+    max_SOH = 15
+    min_SOH = 10
+    Nfull = 5000
+    max_disc = 10
 
 
 

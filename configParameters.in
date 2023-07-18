@@ -5,5 +5,5 @@
     NHoursStep = 1.0
 
 #General
-    Big = 1E16
+    Big = 1E6
 

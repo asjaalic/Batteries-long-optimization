@@ -125,10 +125,10 @@ function read_parameters_from_config_file(file = "configParameters.in")
   #paramDict = read_type_to_dict(file,Number)
   paramDict = read_type_to_dict(file, Any)
   
-  integers =[:NYears :NMonths]
+  integers =[:NMonths]  #NYears
   paramDict = set_integers!(paramDict, integers)
 
-  floats =[:Big :NHoursStep]
+  floats =[:NYears :Big :NHoursStep]
   paramDict = set_floats!(paramDict,floats)
 
 
@@ -251,8 +251,10 @@ function read_Battery_from_file(file = "BatteryCharacteristics.in")
 
   paramDict = read_type_to_dict(file, Any)
   println("Parameters to be used:", paramDict)
+  integers =[:Nfull :max_disc]
+  paramDict = set_integers!(paramDict,integers)
 
-  floats =[:energy_Capacity :Eff_charge :Eff_discharge :max_SOH]
+  floats =[:energy_Capacity :Eff_charge :Eff_discharge :max_SOH :min_SOH]
   paramDict = set_floats!(paramDict,floats)
 
   Battery = BatteryParam(;paramDict...)

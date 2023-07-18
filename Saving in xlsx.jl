@@ -2,46 +2,64 @@
 #using DataFrames
 #using XLSX
 
-#function data_saving(runMode::runModeParam, InputParameters::InputParam,ResultsDP::Results_dp)
+function data_saving(InputParameters::InputParam,ResultsOpt::Results)
 
     @unpack (NYears, NMonths, NStages, NSteps, Big, NHoursStep, NHoursStage) = InputParameters;
-    @unpack (charge_bat,disc_bat, soc_bat,cum_energy,eq_cyc, soh_f, soh_in,rev_stage, degradation, gain, cost_rev) = ResultsOpt;
-    
+    #@unpack (charge_bat,disc_bat, soc_bat,eq_cyc, soh_f, soh_in,rev_stage, degradation, gain, cost_rev, aux_c, aux_d) = ResultsOpt;        #cum_energy,
+    @unpack (charge_bat,disc_bat, soc_bat,eq_cyc, soh_f, soh_in,rev_stage, degradation, gain, cost_rev,cum_energy ) = ResultsOpt;        #cum_energy,
+    @unpack (energy_Capacity, Eff_charge, Eff_discharge, max_SOH, min_SOH ) = Battery ; 
+
     hour=string(now())
     a=replace(hour,':'=> '-')
 
-    nameF= "$NYears years, $NMonths monthsPerStage, $NStages stages, $NSteps steps, $a"
+   # nameF= "old$NYears y, $NMonths monStage, $NStages stages, $NSteps steps, $max_SOH maxSOH, $min_SOH minSOH, $energy_Capacity SOC $a"
+    #nameFile="Final results random prices"
 
     folder = "$nameF"
     mkdir(folder)
     cd(folder)
     main=pwd()
 
-    file = DataFrame()
+    general = DataFrame()
     battery_costs= DataFrame()
     
-    file[!,"SOH_initial"] = soh_in[:]
-    file[!,"SOH_final"] = soh_f[:]
-    file[!,"Cumulated_Energy"] = cum_energy[:]
-    file[!,"Degradation"] = degradation[:]
-    file[!,"Net_Revenues"] = rev_stage[:]
-    file[!,"Gain charge/discharge"] = gain[:]
-    file[!,"Cost revamping"] = cost_rev[:]
+    general[!,"SOH_initial"] = soh_in[:]
+    general[!,"SOH_final"] = soh_f[:]
+    general[!,"Cumulated_Energy"] = cum_energy[:]
+    general[!,"Degradation"] = degradation[:]
+    general[!,"Net_Revenues"] = rev_stage[:]
+    general[!,"Gain charge/discharge"] = gain[:]
+    general[!,"Cost revamping"] = cost_rev[:]
 
     battery_costs[!,"Costs €/MWh"] = Battery_price[:]
 
-    XLSX.writetable("Simulation.xlsx", overwrite=true,
-        results = (collect(DataFrames.eachcol(file)),DataFrames.names(file)),
-        costs = (collect(DataFrames.eachcol(battery_costs)),DataFrames.names(battery_costs))
+    XLSX.writetable("$nameFile.xlsx", overwrite=true,                                       #$nameFile
+    results_stages = (collect(DataFrames.eachcol(general)),DataFrames.names(general)),
+    costs = (collect(DataFrames.eachcol(battery_costs)),DataFrames.names(battery_costs)),
     )
 
-    cd(main)
-        # ritorno nella cartella di salvataggio dati
+    for iStage=1:NStages
+        steps = DataFrame()
 
-    
+        steps[!,"Step"] = ((iStage-1)*NHoursStage+1):(NHoursStage*iStage)
+        steps[!,"SOC"] = soc_bat[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "Charge MW"] = charge_bat[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        #steps[!, "Aux charge MW"] = aux_c[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "Discharge MW"] = disc_bat[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        #steps[!, "Aux discharge MW"] = aux_d[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "Energy_prices €/MWh"] = Power_prices[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+
+        XLSX.writetable("$iStage stage.xlsx", overwrite=true,                                       #$nameFile
+        results_steps = (collect(DataFrames.eachcol(steps)),DataFrames.names(steps)),
+    )
+
+    end
+
+    cd(main)             # ritorno nella cartella di salvataggio dati
+
 
     return println("Saved data in xlsx")
-#end
+end
 
 
 

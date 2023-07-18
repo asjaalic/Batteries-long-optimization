@@ -21,9 +21,8 @@ using Rainflow
 include("Structures.jl")
 include("SetInputParameters.jl")
 include("solveOptimizationAlgorithm.jl")
-include("ProblemFormulation.jl")
-#include("dynamicProgramming.jl")
-#include("Saving in xlsx.jl")
+include("ProblemFormulation1_2.jl")
+include("Saving in xlsx.jl")
 
 date = string(today())
 
@@ -47,8 +46,9 @@ to = TimerOutput()
   # Read power prices from a file [€/MWh]
   
   #Battery_price = rand(100000:0.01:1000000, 21);
-  Battery_price = read_csv("Battery_prices_high_variation.csv",case.DataPath)
+  #Battery_price = read_csv("Battery_prices_exp.csv",case.DataPath)
   #Battery_price = read_csv("Battery_prices_low_variation.csv",case.DataPath)
+  Battery_price = read_csv("Battery_prices_random.csv",case.DataPath)
 
   #Power_prices=rand(50.00:0.01:300.00,NSteps);
   Pp20 = read_csv("prices_2020_8760.csv", case.DataPath);
@@ -56,12 +56,12 @@ to = TimerOutput()
   Pp22 = read_csv("prices_2022_8760.csv", case.DataPath);
   Pp4 = fill(50,NHoursStage);
   Pp5 = rand(50.00:0.01:300, NHoursStage);
-  #Power_prices = vcat(Pp22',Pp21',Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20');
-  Power_prices = vcat(Pp22',Pp21[1:4380],Pp4,Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20')
+  Power_prices = vcat(Pp22',Pp21',Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20');   #  Power_prices = vcat(Pp22',Pp21',Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20'); 
+  #Power_prices = vcat(Pp22',Pp21[1:4380],Pp4,Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20')
   
   # Upload battery's characteristics
   Battery = set_battery_system(runMode, case)
-  @unpack (energy_Capacity, Eff_charge, Eff_discharge , max_SOH) = Battery; 
+  @unpack (energy_Capacity, Eff_charge, Eff_discharge , max_SOH, min_SOH, Nfull, max_disc) = Battery; 
 
   # DEFINE STATE VARIABLES - STATE OF CHARGES SOC [MWh]
   #state_variables = define_state_variables(InputParameters, Battery)
@@ -86,17 +86,15 @@ end
   save(joinpath(FinalResPath, "optimization_results.jld"), "optimization_results", ResultsOpt)
 end
 
-
-
-#= SAVE DATA IN EXCEL FILES
+# SAVE DATA IN EXCEL FILES
 if runMode.excel_savings
-  cartella = "C:\\Users\\Utente\\Desktop\\Batteries\\Results"
+  cartella = "C:\\GitSource-Batteries\\Batteries-long-optimization\\Results"
   cd(cartella)
-  Saving = data_saving(runMode,InputParameters,ResultsDP)
+  Saving = data_saving(InputParameters,ResultsOpt)
 else
   println("Solved without saving results in xlsx format.")
 end
-=#
+
 
 #end
 

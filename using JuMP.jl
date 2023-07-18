@@ -28,3 +28,5 @@ M = Model(
 @constraint(M, Binary_variables, xc+xd==1)
 @constraint(M,Charging[iStep=1:NSteps],charge[iStep] <= 10*xc)
 @constraint(M,Discharging[iStep=1:NSteps], discharge[iStep]<=10*xd)
+
+

@@ -1,9 +1,7 @@
 # PLOTS
 
-using Plots
-
 @unpack (NYears, NMonths, NStages, NSteps, Big, NHoursStep, NHoursStage) = InputParameters;
-@unpack (charge_bat, disc_bat, soc_bat, cum_energy,eq_cyc, soh_f, soh_in,rev_stage, degradation) = ResultsOpt;
+@unpack (charge_bat, disc_bat, soc_bat, eq_cyc, soh_f, soh_in,rev_stage, degradation) = ResultsOpt;
 
 
 # PLOTTING FIRST SEMESTER
