@@ -61,12 +61,9 @@ end
 struct BuildStageProblem
     M::Any
     soc::Any
-    #charge::Any
-    #discharge::Any
-    n_charge::Any 
-    n_discharge::Any
+    charge::Any 
+    discharge::Any
     auxiliary::Any
-    #deg::Any
     deg1::Any
     deg2::Any
     soh_final::Any

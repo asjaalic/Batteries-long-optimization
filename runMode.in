@@ -5,7 +5,7 @@
     # from input files, else from jld inputhpath
     batterySystemFromFile = true
 
-    excel_savings = false
+    excel_savings = true
 
 # Solver settings
     solveMIP = true

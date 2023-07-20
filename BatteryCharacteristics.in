@@ -5,7 +5,7 @@
     Eff_discharge = 0.9
     max_SOH = 15
     min_SOH = 10
-    Nfull = 5000
+    Nfull = 500
     max_disc = 10
 
 

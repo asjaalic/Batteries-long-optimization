@@ -40,12 +40,12 @@ function solveOptimizationProblem(InputParameters::InputParam, SolverParameters:
         
         for iStep=1:NSteps
             soc[iStep] = JuMP.value(problem.soc[iStep])
-            charge[iStep] = JuMP.value(problem.n_charge[iStep])*energy_Capacity/max_disc
-            discharge[iStep] = JuMP.value(problem.n_discharge[iStep])*energy_Capacity/max_disc
+            charge[iStep] = JuMP.value(problem.charge[iStep])
+            discharge[iStep] = JuMP.value(problem.discharge[iStep])
             aux[iStep] = JuMP.value(problem.auxiliary[iStep])
 
-            deg_dis[iStep] = JuMP.value(problem.deg1[iStep])*(energy_Capacity/max_disc*NHoursStep)/(2*Nfull*energy_Capacity)
-            deg_ch[iStep] = JuMP.value(problem.deg2[iStep])*(energy_Capacity/max_disc*NHoursStep)/(2*Nfull*energy_Capacity)
+            deg_dis[iStep] = JuMP.value(problem.deg1[iStep])*NHoursStep/(2*Nfull*energy_Capacity)
+            deg_ch[iStep] = JuMP.value(problem.deg2[iStep])*NHoursStep/(2*Nfull*energy_Capacity)
         end
 
         soc[end] = JuMP.value(problem.soc[end])
@@ -53,7 +53,6 @@ function solveOptimizationProblem(InputParameters::InputParam, SolverParameters:
         for iStage=1:NStages
             soh_final[iStage] = JuMP.value(problem.soh_final[iStage])
             soh_initial[iStage] = JuMP.value(problem.soh_new[iStage])
-            #deg_stage[iStage] = sum(deg_dis[iStep] for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage))  #+deg2[iStep]
 
             deg_stage[iStage] = sum(deg_dis[iStep]+deg_ch[iStep] for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage))
         end

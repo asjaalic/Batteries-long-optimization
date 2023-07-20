@@ -3,6 +3,7 @@
 # Calls the Packages used for the optimization problem
 using JuMP
 using Printf
+#using Gurobi
 using CPLEX
 using MathOptInterface
 using JLD
@@ -21,7 +22,7 @@ using Rainflow
 include("Structures.jl")
 include("SetInputParameters.jl")
 include("solveOptimizationAlgorithm.jl")
-include("ProblemFormulation1_2.jl")
+include("ProblemFormulationCutsTaylor.jl")
 include("Saving in xlsx.jl")
 
 date = string(today())
@@ -47,8 +48,8 @@ to = TimerOutput()
   
   #Battery_price = rand(100000:0.01:1000000, 21);
   #Battery_price = read_csv("Battery_prices_exp.csv",case.DataPath)
-  #Battery_price = read_csv("Battery_prices_low_variation.csv",case.DataPath)
-  Battery_price = read_csv("Battery_prices_random.csv",case.DataPath)
+  Battery_price = read_csv("Battery_prices_low_variation.csv",case.DataPath)
+  #Battery_price = read_csv("Battery_prices_random.csv",case.DataPath)
 
   #Power_prices=rand(50.00:0.01:300.00,NSteps);
   Pp20 = read_csv("prices_2020_8760.csv", case.DataPath);
