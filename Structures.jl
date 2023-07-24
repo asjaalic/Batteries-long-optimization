@@ -12,6 +12,7 @@
     NHoursStage::I                                 # Number of hours in each Stage (3-4-6 months)
     NSteps::I                                     # Number of steps in the NYeras --> NYears*8760/NHoursStep
     Big::F                                        # A big number
+    conv::F                                       # A small number for degradation convergence
 end
 
 # Battery's characteristics
@@ -63,25 +64,37 @@ struct BuildStageProblem
     soc::Any
     charge::Any 
     discharge::Any
-    auxiliary::Any
-    deg1::Any
-    deg2::Any
+    SOC_aux::Any
+    P_aux::Any
+    d::Any
+    deg::Any
+    u::Any
+    d_1::Any
+    d_2::Any
+    deg_1::Any
+    deg_2::Any
     soh_final::Any
     soh_new::Any
 end
 
 struct Results
-    obj::Any
-    rev_stage::Any
-    gain::Any
+    objective::Any
+    revenues_per_stage::Any
+    gain_stage::Any
     cost_rev::Any
-    soc_bat::Any
-    charge_bat::Any
-    disc_bat::Any
-    aux::Any
-    deg_ch::Any
-    deg_dis::Any
     deg_stage::Any
-    soh_f::Any
-    soh_in::Any
+    soc::Any
+    charge::Any
+    discharge::Any
+    soc_aux::Any
+    p_aux::Any
+    d::Any
+    deg::Any
+    d_1::Any
+    d_2::Any
+    deg_1::Any
+    deg_2::Any
+    u::Any
+    soh_final::Any
+    soh_initial::Any
 end

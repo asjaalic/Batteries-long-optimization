@@ -7,8 +7,6 @@ function solveOptimizationProblem(InputParameters::InputParam, SolverParameters:
 
     println("Solving Optimization Problem")
 
-    k= NHoursStep*energy_Capacity/(2*Nfull*energy_Capacity)
-
     objective = 0
     revenues_per_stage = zeros(NStages)
     gain_stage = zeros(NStages)
@@ -19,16 +17,10 @@ function solveOptimizationProblem(InputParameters::InputParam, SolverParameters:
     discharge = zeros(NSteps)
     soc = zeros(NSteps+1)
 
-    soc_aux =zeros(NSteps)
-    p_aux = zeros(NSteps)
+    aux =zeros(NSteps)
 
-    d = zeros(NSteps)
-    deg = zeros(NSteps)
-    d_1 =zeros(NSteps)
-    d_2 = zeros(NSteps)
-    deg_1 = zeros(NSteps)
-    deg_2 =zeros(NSteps)
-    u = zeros(NSteps)
+    deg_neg = zeros(NSteps)
+    deg_pos = zeros(NSteps)
 
     soh_final = zeros(NStages)
     soh_initial = zeros(NStages)
@@ -53,16 +45,10 @@ function solveOptimizationProblem(InputParameters::InputParam, SolverParameters:
             charge[iStep] = JuMP.value(problem.charge[iStep])
             discharge[iStep] = JuMP.value(problem.discharge[iStep])
 
-            soc_aux[iStep] = JuMP.value(problem.SOC_aux[iStep])
-            p_aux[iStep] = JuMP.value(problem.P_aux[iStep])
-
-            d[iStep] = JuMP.value(problem.d[iStep])       
-            deg[iStep] = JuMP.value(problem.deg[iStep])
-            d_1[iStep] = JuMP.value(problem.d_1[iStep])
-            d_2[iStep] = JuMP.value(problem.d_2[iStep])
-            deg_1[iStep] = JuMP.value(problem.deg_1[iStep])
-            deg_2[iStep] = JuMP.value(problem.deg_2[iStep])
-            u[iStep] = JuMP.value(problem.u[iStep])
+            aux[iStep] = JuMP.value(problem.auxiliary[iStep])
+    
+            deg_neg[iStep] = JuMP.value(problem.deg1[iStep])
+            deg_pos[iStep] = JuMP.value(problem.deg2[iStep])
 
         end
 
@@ -72,25 +58,25 @@ function solveOptimizationProblem(InputParameters::InputParam, SolverParameters:
             soh_final[iStage] = JuMP.value(problem.soh_final[iStage])
             soh_initial[iStage] = JuMP.value(problem.soh_new[iStage])
 
-            deg_stage[iStage] = sum(2*p_aux[iStep]-d[iStep] for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage))*k
+            deg_stage[iStage] = sum(deg1[iStep]+deg2[iStep] for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage))*NHoursStep/(2*Nfull*energy_Capacity) 
         end
 
         #
         for iStage=2:(NStages-1)
-            revenues_per_stage[iStage] = sum(Power_prices[iStep]*NHoursStep*energy_Capacity*(discharge[iStep]-charge[iStep]) for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage)) - Battery_price[iStage]*(soh_initial[iStage]-soh_final[iStage-1])
-            gain_stage[iStage] = sum(Power_prices[iStep]*NHoursStep*energy_Capacity*(discharge[iStep]-charge[iStep]) for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage))
+            revenues_per_stage[iStage] = sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage)) - Battery_price[iStage]*(soh_initial[iStage]-soh_final[iStage-1])
+            gain_stage[iStage] = sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage))
             cost_rev[iStage] = Battery_price[iStage]*(soh_initial[iStage]-soh_final[iStage-1])
         end
         #
 
-        revenues_per_stage[1] = sum(Power_prices[iStep]*NHoursStep*energy_Capacity*(discharge[iStep]-charge[iStep]) for iStep=((1-1)*NHoursStage+1):(NHoursStage*1)) - Battery_price[1]*(soh_initial[1]-min_SOH)
-        gain_stage[1]= sum(Power_prices[iStep]*NHoursStep*energy_Capacity*(discharge[iStep]-charge[iStep]) for iStep=((1-1)*NHoursStage+1):(NHoursStage*1))
+        revenues_per_stage[1] = sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((1-1)*NHoursStage+1):(NHoursStage*1)) - Battery_price[1]*(soh_initial[1]-min_SOH)
+        gain_stage[1]= sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((1-1)*NHoursStage+1):(NHoursStage*1))
         #cost_rev[1] = Battery_price[1]*(soh_initial[1]-min_SOH)-Battery_price[2]*(soh_final[1]-min_SOH)
         cost_rev[1] = Battery_price[1]*(soh_initial[1]-min_SOH)
 
         
-        revenues_per_stage[NStages] = sum(Power_prices[iStep]*NHoursStep*energy_Capacity*(discharge[iStep]-charge[iStep]) for iStep=((NStages-1)*NHoursStage+1):(NHoursStage*NStages)) + Battery_price[NStages+1]*(soh_final[NStages]-min_SOH)-Battery_price[NStages-1]*(soh_initial[NStages]-soh_final[NStages-1])
-        gain_stage[NStages]= sum(Power_prices[iStep]*NHoursStep*energy_Capacity*(discharge[iStep]-charge[iStep]) for iStep=((NStages-1)*NHoursStage+1):(NHoursStage*NStages))
+        revenues_per_stage[NStages] = sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((NStages-1)*NHoursStage+1):(NHoursStage*NStages)) + Battery_price[NStages+1]*(soh_final[NStages]-min_SOH)-Battery_price[NStages-1]*(soh_initial[NStages]-soh_final[NStages-1])
+        gain_stage[NStages]= sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=((NStages-1)*NHoursStage+1):(NHoursStage*NStages))
         cost_rev[NStages] = -Battery_price[NStages+1]*(soh_final[NStages]-min_SOH) + Battery_price[NStages]*(soh_initial[NStages]-soh_final[NStages-1])
         
 
@@ -107,15 +93,9 @@ function solveOptimizationProblem(InputParameters::InputParam, SolverParameters:
         soc,
         charge,
         discharge,
-        soc_aux,
-        p_aux,
-        d,
-        deg,
-        d_1,
-        d_2,
-        deg_1,
-        deg_2,
-        u,
+        aux,
+        deg_neg,
+        deg_pos,
         soh_final,
         soh_initial,  
     )

@@ -2,7 +2,11 @@
 using JuMP,CPLEX
 
 M = Model(CPLEX.Optimizer)
-#M= Model(Gurobi.Optimizer)
+set_optimizer_attribute(M,"CPX_PARAM_THREADS",1)
+
+using JuMP, Gurobi
+
+M= Model(Gurobi.Optimizer)
 NSteps=48
 Eff_charge=0.9
 Eff_discharge = 0.9
@@ -33,9 +37,14 @@ optimize!(M)
 @constraint(M,Discharging[iStep=1:NSteps], discharge[iStep]<=10*xd)
 
 
-ENV["GUROBI_HOME"] = "C:\\gurobi1002\\win64"
+ENV["GUROBI_HOME"] = "C:\\gurobi1002\\win64\\bin"
 import Pkg
-Pkg.add("Gurobi")
+Pkg.status()
+Pkg.add(Pkg.PackageSpec(;name="JuMP", version = "1.0.0"))
+
+
+
+Pkg.add(Pkg.PackageSpec(;name="Gurobi", version = "0.11.1"))
 Pkg.build("Gurobi")
 
 using JuMP,Gurobi

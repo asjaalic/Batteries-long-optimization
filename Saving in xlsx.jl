@@ -5,14 +5,13 @@
 function data_saving(InputParameters::InputParam,ResultsOpt::Results)
 
     @unpack (NYears, NMonths, NStages, NSteps, Big, NHoursStep, NHoursStage) = InputParameters;
-    #@unpack (charge_bat,disc_bat, soc_bat,eq_cyc, soh_f, soh_in,rev_stage, degradation, gain, cost_rev, aux_c, aux_d) = ResultsOpt;        #cum_energy,
-    @unpack (charge_bat,disc_bat, soc_bat, soh_f, soh_in, rev_stage, deg_stage,deg_ch,deg_dis, gain, cost_rev) = ResultsOpt;        #cum_energy,
+    @unpack (charge,discharge, soc, soh_final, soh_initial, revenues_per_stage, deg, soc_aux, p_aux, d, deg, d_1,d_2,deg_1,deg_2,u, gain_stage, cost_rev, deg_stage) = ResultsOpt;        #cum_energy,
     @unpack (energy_Capacity, Eff_charge, Eff_discharge, max_SOH, min_SOH ) = Battery ; 
 
     hour=string(now())
     a=replace(hour,':'=> '-')
 
-    nameF= "old$NYears y, $NMonths monStage, $NStages stages, $NSteps steps, $max_SOH maxSOH, $min_SOH minSOH, $energy_Capacity SOC $a"
+    nameF= " VARIABILI BINARIE "
     nameFile="Final results decreasing prices"
 
     folder = "$nameF"
@@ -23,11 +22,11 @@ function data_saving(InputParameters::InputParam,ResultsOpt::Results)
     general = DataFrame()
     battery_costs= DataFrame()
     
-    general[!,"SOH_initial"] = soh_in[:]
-    general[!,"SOH_final"] = soh_f[:]
+    general[!,"SOH_initial"] = soh_initial[:]
+    general[!,"SOH_final"] = soh_final[:]
     general[!,"Degradation"] = deg_stage[:]
-    general[!,"Net_Revenues"] = rev_stage[:]
-    general[!,"Gain charge/discharge"] = gain[:]
+    general[!,"Net_Revenues"] = revenues_per_stage[:]
+    general[!,"Gain charge/discharge"] = gain_stage[:]
     general[!,"Cost revamping"] = cost_rev[:]
 
     battery_costs[!,"Costs €/MWh"] = Battery_price[:]
@@ -41,11 +40,18 @@ function data_saving(InputParameters::InputParam,ResultsOpt::Results)
         steps = DataFrame()
 
         steps[!,"Step"] = ((iStage-1)*NHoursStage+1):(NHoursStage*iStage)
-        steps[!,"SOC"] = soc_bat[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
-        steps[!, "Charge MW"] = charge_bat[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
-        steps[!, "Deg charge MW"] = deg_ch[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
-        steps[!, "Discharge MW"] = disc_bat[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
-        steps[!, "Deg discharge MW"] = deg_dis[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!,"SOC"] = soc[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "Charge MW"] = charge[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "Discharge MW"] = discharge[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "d"] = d[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "d_1"] = d_1[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "d_2"] = d_2[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "Deg"] = deg[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "Deg_1"] = deg_1[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "Deg_2"] = deg_2[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "Binary u"] = u[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "AUX"] = soc_aux[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "P_AUX k"] = p_aux[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
         steps[!, "Energy_prices €/MWh"] = Power_prices[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
 
         XLSX.writetable("$iStage stage.xlsx", overwrite=true,                                       #$nameFile

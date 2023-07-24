@@ -3,8 +3,8 @@
 # Calls the Packages used for the optimization problem
 using JuMP
 using Printf
-#using Gurobi
-using CPLEX
+using Gurobi
+#using CPLEX
 using MathOptInterface
 using JLD
 using TimerOutputs
@@ -39,7 +39,7 @@ to = TimerOutput()
   # Set run mode (how and what to run) and Input parameters
   runMode = read_runMode_file()
   InputParameters = set_parameters(runMode, case)
-  @unpack (NYears, NMonths, NHoursStep, NHoursStage, NStages, NSteps, Big)= InputParameters;
+  @unpack (NYears, NMonths, NHoursStep, NHoursStage, NStages, NSteps, Big, conv)= InputParameters;
 
   # Set solver parameters (Cplex etc)
   SolverParameters = set_solverParameters()
@@ -57,7 +57,7 @@ to = TimerOutput()
   Pp22 = read_csv("prices_2022_8760.csv", case.DataPath);
   Pp4 = fill(50,NHoursStage);
   Pp5 = rand(50.00:0.01:300, NHoursStage);
-  Power_prices = vcat(Pp22',Pp21',Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20');   #  Power_prices = vcat(Pp22',Pp21',Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20'); 
+  Power_prices = vcat(Pp20',Pp22',Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20');   #  Power_prices = vcat(Pp22',Pp21',Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20'); 
   #Power_prices = vcat(Pp22',Pp21[1:4380],Pp4,Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20')
   
   # Upload battery's characteristics
@@ -89,7 +89,7 @@ end
 
 # SAVE DATA IN EXCEL FILES
 if runMode.excel_savings
-  cartella = "C:\\GitSource-Batteries\\Batteries-long-optimization\\Results"
+  cartella = "C:\\GitSource-Batteries\\Batteries-long-optimization\\Batteries-long-optimization\\Results"
   cd(cartella)
   Saving = data_saving(InputParameters,ResultsOpt)
 else

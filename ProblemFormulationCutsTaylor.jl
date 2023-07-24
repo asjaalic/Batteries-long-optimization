@@ -10,45 +10,59 @@ function BuildStageProblem(InputParameters::InputParam, SolverParameters::Solver
       CPX_PARAM_THREADS,
     ) = SolverParameters
   
-    @unpack (NYears, NMonths, NStages, Big, NSteps, NHoursStep, NHoursStage) = InputParameters;  #, NSteps
+    @unpack (NYears, NMonths, NStages, Big, NSteps, NHoursStep, NHoursStage, conv) = InputParameters;  #, NSteps
     @unpack (energy_Capacity, Eff_charge, Eff_discharge, max_SOH, min_SOH, Nfull, max_disc ) = Battery ;         #MAXCharge, MAXDischarge,
 
-    M = Model(
-      with_optimizer(
-        CPLEX.Optimizer,
-        CPX_PARAM_SCRIND = CPX_PARAM_SCRIND,
-        CPX_PARAM_PREIND = CPX_PARAM_PREIND,
-        CPXPARAM_MIP_Tolerances_MIPGap = CPXPARAM_MIP_Tolerances_MIPGap,
-        CPX_PARAM_TILIM = CPX_PARAM_TILIM,
-        CPX_PARAM_THREADS = CPX_PARAM_THREADS,
-      )
-    )
+    k= NHoursStep*energy_Capacity/(2*Nfull*energy_Capacity)
+    deg_max= (1/Eff_discharge)^0.5
+    deg_avg = 0.5*deg_max
 
-    #M = Model(Gurobi.Optimizer)
-    #set_optimizer_attribute(M, "NonConvex", 2)
+    #=    
+      M = Model(CPLEX.Optimizer)
+      set_optimizer_attribute(M,"CPX_PARAM_SCRIND",CPX_PARAM_SCRIND)
+      set_optimizer_attribute(M,"CPX_PARAM_PREIND",CPX_PARAM_PREIND)
+      set_optimizer_attribute(M,"CPXPARAM_MIP_Tolerances_MIPGap",CPXPARAM_MIP_Tolerances_MIPGap)
+      set_optimizer_attribute(M,"CPX_PARAM_TILIM",CPX_PARAM_TILIM)
+      set_optimizer_attribute(M,"CPX_PARAM_THREADS",CPX_PARAM_THREADS)
+    =#
+
+    M = Model(Gurobi.Optimizer)
+    set_optimizer_attribute(M, "MIPGap", 0.005)
     #set_optimizer_attribute(M,"Cuts",1)
 
     # DEFINE VARIABLES
 
     @variable(M, 0 <= soc[iStep=1:NSteps+1] <= energy_Capacity, base_name = "Energy")                # MWh   energy_Capacity NSteps
     
-    @variable(M, 0 <= charge[iStep=1:NSteps] <= max_disc, base_name=" Int charge")
-    @variable(M, 0 <= discharge[iStep=1:NSteps] <= max_disc, base_name=" Int discharge")
+    @variable(M, 0 <= charge[iStep=1:NSteps] <= 1, base_name= "Charge")      #max_disc   0<=discharge<=1
+    @variable(M, 0 <= discharge[iStep=1:NSteps] <= 1, base_name= "Discharge")
     
-    @variable(M, 0 <= auxiliary[iStep=1:NSteps] <= 2, base_name = "Auxiliary")
-    
-    @variable(M, 0 <= deg1[iStep=1:NSteps] <= 2*energy_Capacity , base_name = "Degradation discharge")
-    @variable(M, 0 <= deg2[iStep=1:NSteps] <= 2*energy_Capacity , base_name = "Degradation charge")
+    @variable(M, 0 <= SOC_aux[iStep=1:NSteps] <= 2, base_name = "Auxiliary for SOC")            #2k
+    @variable(M, 0<= P_aux[iStep=1:NSteps] <= deg_max^2, base_name = "Auxiliary power" )  #1/eff
 
     @variable(M, min_SOH <= soh_final[iStage=1:NStages] <= max_SOH, base_name = "Final_Capacity")        #energy_Capacity
     @variable(M, min_SOH <= soh_new[iStage=1:NStages] <= max_SOH, base_name = "Initial_Capacity")     #energy_Capacity
+
+    #VARIABLES FOR CUTS AND DEGRADATION
+
+    @variable(M, u[iStep=1:NSteps], Bin, base_name ="Binary")
+
+    @variable(M, 0<= d[iStep=1:NSteps] <= deg_max^2, base_name = "Degradation_y")
+    @variable(M, 0<= deg[iStep=1:NSteps] <= deg_max, base_name = "Degradation_x")
+    
+    @variable(M, 0 <= d_1[iStep=1:NSteps] <= deg_avg^2, base_name = "d_1")  
+    @variable(M, 0 <= deg_1[iStep=1:NSteps] <= deg_avg , base_name = "Deg_1")       
+
+    @variable(M, 0 <= d_2[iStep=1:NSteps] <= deg_max^2, base_name = "d_2")  
+    @variable(M, 0 <= deg_2[iStep=1:NSteps] <= deg_max , base_name = "Deg_2")   
+
 
     # DEFINE OJECTIVE function - length(Battery_price) = NStages+1=21
 
     @objective(
       M,
       MathOptInterface.MAX_SENSE, 
-      sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=1:NSteps) -
+      sum(Power_prices[iStep]*NHoursStep*energy_Capacity*(discharge[iStep]-charge[iStep]) for iStep=1:NSteps) -
       sum(Battery_price[iStage]*(soh_new[iStage]-soh_final[iStage-1]) for iStage=2:NStages) - 
       Battery_price[1]*(soh_new[1]-min_SOH) + 
       Battery_price[NStages+1]*(soh_final[NStages]-min_SOH) 
@@ -56,11 +70,76 @@ function BuildStageProblem(InputParameters::InputParam, SolverParameters::Solver
          
     # DEFINE CONSTRAINTS
 
-    @constraint(M,energy[iStep=1:NSteps], soc[iStep] + (charge[iStep]*Eff_charge-discharge[iStep]/Eff_discharge)*NHoursStep == soc[iStep+1] )
+    @constraint(M,energy[iStep=1:NSteps], soc[iStep] + (charge[iStep]*Eff_charge-discharge[iStep]/Eff_discharge)*energy_Capacity*NHoursStep == soc[iStep+1] )
 
-    @constraint(M, aux[iStep=1:NSteps], auxiliary[iStep] == (2-(soc[iStep+1]+soc[iStep])/energy_Capacity))
+    @constraint(M, SOCaux[iStep=1:NSteps], SOC_aux[iStep] == (soc[iStep+1]+soc[iStep])/energy_Capacity) 
+    
+    @constraint(M,Paux[iStep=1:NSteps], P_aux[iStep]==(charge[iStep]*Eff_charge+discharge[iStep]/Eff_discharge ))    
 
-    #CONSTRAINT FOR CHARGING - DEGRADATION
+    @constraint(M, substitution[iStep=1:NSteps], deg[iStep]*deg[iStep] <= SOC_aux[iStep]*P_aux[iStep] )
+
+    # CONSTRAINTS FOR LINEARIZATION
+
+    @constraint(M, deg_x[iStep=1:NSteps], deg[iStep] == deg_1[iStep]+deg_2[iStep] )
+    @constraint(M, deg_y[iStep=1:NSteps], d[iStep] == d_1[iStep]+d_2[iStep])
+
+    # UPPER Cuts for deg_1 and d_1
+    @constraint(M, lower_deg1[iStep=1:NSteps], deg_1[iStep]>= 0*u[iStep])
+    @constraint(M, upper_deg1[iStep=1:NSteps], deg_1[iStep] <= u[iStep]*deg_avg)
+
+    @constraint(M, upper_d1[iStep=1:NSteps], d_1[iStep] <= deg_avg*deg_1[iStep])
+
+    # UPPER CUTS FOR deg_2 and d_2
+    @constraint(M, lower_deg2[iStep=1:NSteps], deg_2[iStep] >= (1-u[iStep])*deg_avg)
+    @constraint(M, upper_deg2[iStep=1:NSteps], deg_2[iStep] <= (1-u[iStep])*deg_max)
+
+    @constraint(M,upper_d2[iStep=1:NSteps], d_2[iStep] <= deg_2[iStep]*(deg_max+deg_avg)-(1-u[iStep])*(deg_max*deg_avg))
+
+    #LOWER CUTS
+    @constraint(M, deg_pos_1[iStep=1:NSteps], d[iStep]>= 2*0*deg[iStep]-(0)^2)
+    @constraint(M, deg_pos_2[iStep=1:NSteps], d[iStep]>= 2*0.12*deg[iStep]-(0.12)^2)
+    @constraint(M, deg_pos_3[iStep=1:NSteps], d[iStep]>= 2*0.23*deg[iStep]-(0.23)^2)
+    @constraint(M, deg_pos_4[iStep=1:NSteps], d[iStep]>= 2*0.35*deg[iStep]-(0.35)^2)
+    @constraint(M, deg_pos_5[iStep=1:NSteps], d[iStep]>= 2*0.47*deg[iStep]-(0.47)^2)    
+    @constraint(M, deg_pos_6[iStep=1:NSteps], d[iStep]>= 2*0.59*deg[iStep]-(0.59)^2)
+    @constraint(M, deg_pos_7[iStep=1:NSteps], d[iStep]>= 2*0.70*deg[iStep]-(0.70)^2)
+    @constraint(M, deg_pos_8[iStep=1:NSteps], d[iStep]>= 2*0.82*deg[iStep]-(0.82)^2)
+    @constraint(M, deg_pos_9[iStep=1:NSteps], d[iStep]>= 2*0.94*deg[iStep]-(0.94)^2)
+    @constraint(M, deg_pos_10[iStep=1:NSteps], d[iStep]>= 2*1.05*deg[iStep]-(1.05)^2)
+
+
+    #CONSTRAINT ON REVAMPING
+
+    @constraint(M, deg_tot[iStep=1:NSteps], 2*P_aux[iStep]-d[iStep]>=0 )
+
+    @constraint(M,soh[iStage=1:(NStages-1)], soh_new[iStage+1] >= soh_final[iStage])
+
+    @constraint(M,final_soh[iStage=1:NStages], soh_final[iStage] == soh_new[iStage]- sum(2*P_aux[iStep]-d[iStep] for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage))*k )     #deg2
+
+    return BuildStageProblem(
+        M,
+        soc,
+        charge,
+        discharge,
+        SOC_aux,
+        P_aux,
+        d,
+        deg,
+        u,
+        d_1,
+        d_2,
+        deg_1,
+        deg_2,
+        soh_final,
+        soh_new,
+      )
+end
+
+
+
+  # LINEAR LINEARIZATION
+  #=
+#CONSTRAINT FOR CHARGING - DEGRADATION
     @constraint(M, deg_pos_1[iStep=1:NSteps], deg2[iStep] >= Eff_charge*0*2+0*Eff_charge*(auxiliary[iStep]-2)+2*Eff_charge*(charge[iStep]-0))
     @constraint(M, deg_pos_2[iStep=1:NSteps], deg2[iStep] >= Eff_charge*0*1.5+0*Eff_charge*(auxiliary[iStep]-1.5)+1.5*Eff_charge*(charge[iStep]-0))
     @constraint(M, deg_pos_3[iStep=1:NSteps], deg2[iStep] >= Eff_charge*0*1+0*Eff_charge*(auxiliary[iStep]-1)+1*Eff_charge*(charge[iStep]-0))
@@ -104,20 +183,4 @@ function BuildStageProblem(InputParameters::InputParam, SolverParameters::Solver
 
     @constraint(M, deg_neg_14[iStep=1:NSteps], deg1[iStep] >= (8*0.89+8*(auxiliary[iStep]-0.89)+0.89*(discharge[iStep]-8))/Eff_discharge)
 
-    #CONSTRAINT ON REVAMPING
-    @constraint(M,soh[iStage=1:(NStages-1)], soh_new[iStage+1] >= soh_final[iStage])
-
-    @constraint(M,final_soh[iStage=1:NStages], soh_final[iStage] == soh_new[iStage]- sum(deg1[iStep]+deg2[iStep] for iStep=((iStage-1)*NHoursStage+1):(NHoursStage*iStage))*NHoursStep/(2*Nfull*energy_Capacity) )     #deg2
-
-    return BuildStageProblem(
-        M,
-        soc,
-        charge,
-        discharge,
-        auxiliary,
-        deg1,
-        deg2,
-        soh_final,
-        soh_new,
-      )
-end
+  =#

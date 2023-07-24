@@ -1,9 +1,10 @@
 
 #problem definition
-    NYears = 10
+    NYears = 2
     NMonths = 6
     NHoursStep = 1.0
 
 #General
     Big = 1E6
+    conv = 0.001
 

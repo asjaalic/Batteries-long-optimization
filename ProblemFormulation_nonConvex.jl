@@ -1,28 +1,12 @@
 # STAGE MAXIMIZATION PROBLEM FORMULATION
 
 function BuildStageProblem(InputParameters::InputParam, SolverParameters::SolverParam, Battery::BatteryParam)       #, state_variables::states When we have 2 hydropower plants- 2 turbines
-
-  #=
-    @unpack (
-      CPX_PARAM_SCRIND,
-      CPX_PARAM_PREIND,
-      CPXPARAM_MIP_Tolerances_MIPGap,
-      CPX_PARAM_TILIM,
-      CPX_PARAM_THREADS,
-    ) = SolverParameters
-    =#
   
     @unpack (NYears, NMonths, NStages, Big, NSteps, NHoursStep, NHoursStage) = InputParameters;  #, NSteps
     @unpack (energy_Capacity, Eff_charge, Eff_discharge, max_SOH, min_SOH, Nfull, max_disc ) = Battery ;         #MAXCharge, MAXDischarge,
 
-    M = Model(
-        Gurobi.Optimizer,
-        #CPX_PARAM_SCRIND = CPX_PARAM_SCRIND,
-        #CPX_PARAM_PREIND = CPX_PARAM_PREIND,
-        #CPXPARAM_MIP_Tolerances_MIPGap = CPXPARAM_MIP_Tolerances_MIPGap,
-        #CPX_PARAM_TILIM = CPX_PARAM_TILIM,
-        #CPX_PARAM_THREADS = CPX_PARAM_THREADS,
-    )
+    M = Model(Gurobi.Optimizer)
+    
     set_optimizer_attribute(M, "NonConvex", 2)
     #set_optimizer_attribute(M,"MIPFocus",3)
     #set_optimizer_attribute(M, "Heuristics")
@@ -50,8 +34,7 @@ function BuildStageProblem(InputParameters::InputParam, SolverParameters::Solver
       sum(Power_prices[iStep]*NHoursStep*(discharge[iStep]-charge[iStep]) for iStep=1:NSteps) -
       sum(Battery_price[iStage]*(soh_new[iStage]-soh_final[iStage-1]) for iStage=2:NStages) - 
       Battery_price[1]*(soh_new[1]-min_SOH) + 
-      Battery_price[NStages+1]*(soh_final[NStages]-min_SOH) #Battery_price[end]
-      #-Big*sum(ch_quad[iStep]+dis_quad[iStep] for iStep=1:NSteps)  
+      Battery_price[NStages+1]*(soh_final[NStages]-min_SOH) 
       )
          
     # DEFINE CONSTRAINTS
