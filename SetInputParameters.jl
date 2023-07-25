@@ -150,11 +150,11 @@ function read_solverParameters_from_file(file = "solverParameters.in")
     #paramDict = read_type_to_dict(file, Number)
     paramDict = read_type_to_dict(file, Any)
 
+    integers = [:MIPFocus]
     #integers = [:CPX_PARAM_SCRIND :CPX_PARAM_PREIND :CPX_PARAM_TILIM :CPX_PARAM_THREADS]
-    integers = [:CPX_PARAM_SCRIND :CPX_PARAM_PREIND :CPX_PARAM_TILIM :CPX_PARAM_THREADS]
     paramDict = set_integers!(paramDict, integers)
 
-    floats = [:CPXPARAM_MIP_Tolerances_MIPGap]
+    floats = [:MIPGap :Method :Cuts :Heuristics]
     paramDict = set_floats!(paramDict,floats)
 
     inputData = SolverParam(; paramDict...)

@@ -2,16 +2,16 @@
 #using DataFrames
 #using XLSX
 
-function data_saving(InputParameters::InputParam,ResultsOpt::Results)
+#function data_saving(InputParameters::InputParam,ResultsOpt::Results)
 
     @unpack (NYears, NMonths, NStages, NSteps, Big, NHoursStep, NHoursStage) = InputParameters;
-    @unpack (charge,discharge, soc, soh_final, soh_initial, revenues_per_stage, deg, soc_aux, p_aux, d, deg, d_1,d_2,deg_1,deg_2,u, gain_stage, cost_rev, deg_stage) = ResultsOpt;        #cum_energy,
+    @unpack (charge,discharge, soc, soh_final, soh_initial, revenues_per_stage, deg, soc_aux, p_aux, d, deg, d_1,d_2,d_3, deg_1,deg_2,deg_3,u1,u2, gain_stage, cost_rev, deg_stage) = ResultsOpt;        #cum_energy,
     @unpack (energy_Capacity, Eff_charge, Eff_discharge, max_SOH, min_SOH ) = Battery ; 
 
     hour=string(now())
     a=replace(hour,':'=> '-')
 
-    nameF= " VARIABILI BINARIE "
+    nameF= " VARIABILI BINARIE 2 anni 3 cuts "
     nameFile="Final results decreasing prices"
 
     folder = "$nameF"
@@ -46,12 +46,15 @@ function data_saving(InputParameters::InputParam,ResultsOpt::Results)
         steps[!, "d"] = d[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
         steps[!, "d_1"] = d_1[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
         steps[!, "d_2"] = d_2[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "d_3"] = d_3[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
         steps[!, "Deg"] = deg[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
         steps[!, "Deg_1"] = deg_1[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
         steps[!, "Deg_2"] = deg_2[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
-        steps[!, "Binary u"] = u[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "Deg_3"] = deg_3[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "Binary u_1"] = u1[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "Binary u_2"] = u2[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
         steps[!, "AUX"] = soc_aux[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
-        steps[!, "P_AUX k"] = p_aux[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
+        steps[!, "P_AUX "] = p_aux[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
         steps[!, "Energy_prices €/MWh"] = Power_prices[((iStage-1)*NHoursStage+1):(NHoursStage*iStage)]
 
         XLSX.writetable("$iStage stage.xlsx", overwrite=true,                                       #$nameFile

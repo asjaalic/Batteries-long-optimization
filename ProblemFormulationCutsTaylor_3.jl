@@ -4,26 +4,20 @@ function BuildStageProblem(InputParameters::InputParam, SolverParameters::Solver
 
     @unpack (
       MIPGap,
-      MIPFocus,
-      Method,
-      Cuts,
-      Heuristics,
     ) = SolverParameters;
   
     @unpack (NYears, NMonths, NStages, Big, NSteps, NHoursStep, NHoursStage, conv) = InputParameters;  #, NSteps
     @unpack (energy_Capacity, Eff_charge, Eff_discharge, max_SOH, min_SOH, Nfull, max_disc ) = Battery ;         #MAXCharge, MAXDischarge,
 
     k= NHoursStep*energy_Capacity/(2*Nfull*energy_Capacity)
-    deg_max= (1/Eff_discharge)^0.5        # 1.05
-    deg_avg = 0.5*deg_max                 # 0.527
-
+    deg_max = (1/Eff_discharge)^0.5        # 1.05
+    deg_A = deg_max/3                 
+    deg_B = deg_max*2/3
+/
 
     M = Model(Gurobi.Optimizer)
     set_optimizer_attribute(M, "MIPGap", MIPGap)
-    #set_optimizer_attribute(M,"MIPFocus", MIPFocus)
-    #set_optimizer_attribute(M,"Method", Method)
-    #set_optimizer_attribute(M,"Cuts", Cuts)
-    #set_optimizer_attribute(M,"Heuristics", Heuristics)
+    #set_optimizer_attribute(M,"Cuts",1)
 
     # DEFINE VARIABLES
 
@@ -40,16 +34,20 @@ function BuildStageProblem(InputParameters::InputParam, SolverParameters::Solver
 
     #VARIABLES FOR CUTS AND DEGRADATION
 
-    @variable(M, u[iStep=1:NSteps], Bin, base_name ="Binary")
+    @variable(M, u1[iStep=1:NSteps], Bin, base_name = "Binary A")
+    @variable(M, u2[iStep=1:NSteps], Bin, base_name = "Binary B")
 
     @variable(M, 0<= d[iStep=1:NSteps] <= deg_max^2, base_name = "Degradation_y")
     @variable(M, 0<= deg[iStep=1:NSteps] <= deg_max, base_name = "Degradation_x")
     
-    @variable(M, 0 <= d_1[iStep=1:NSteps] <= deg_avg^2, base_name = "d_1")  
-    @variable(M, 0 <= deg_1[iStep=1:NSteps] <= deg_avg , base_name = "Deg_1")       
+    @variable(M, 0 <= d_1[iStep=1:NSteps] <= deg_A^2, base_name = "d_1")  
+    @variable(M, 0 <= deg_1[iStep=1:NSteps] <= deg_A , base_name = "Deg_1")       
 
-    @variable(M, 0 <= d_2[iStep=1:NSteps] <= deg_max^2, base_name = "d_2")  
-    @variable(M, 0 <= deg_2[iStep=1:NSteps] <= deg_max , base_name = "Deg_2")   
+    @variable(M, 0 <= d_2[iStep=1:NSteps] <= deg_B^2, base_name = "d_2")  
+    @variable(M, 0 <= deg_2[iStep=1:NSteps] <= deg_B , base_name = "Deg_2")   
+
+    @variable(M, 0 <= d_3[iStep=1:NSteps] <= deg_max^2, base_name = "d_2")  
+    @variable(M, 0 <= deg_3[iStep=1:NSteps] <= deg_max , base_name = "Deg_2")
 
 
     # DEFINE OJECTIVE function - length(Battery_price) = NStages+1=21
@@ -75,20 +73,26 @@ function BuildStageProblem(InputParameters::InputParam, SolverParameters::Solver
 
     # CONSTRAINTS FOR LINEARIZATION
 
-    @constraint(M, deg_x[iStep=1:NSteps], deg[iStep] == deg_1[iStep]+deg_2[iStep] )
-    @constraint(M, deg_y[iStep=1:NSteps], d[iStep] == d_1[iStep]+d_2[iStep])
+    @constraint(M, deg_x[iStep=1:NSteps], deg[iStep] == deg_1[iStep]+deg_2[iStep]+deg_3[iStep] )
+    @constraint(M, deg_y[iStep=1:NSteps], d[iStep] == d_1[iStep]+d_2[iStep]+d_3[iStep])
 
     # UPPER Cuts for deg_1 and d_1
-    @constraint(M, lower_deg1[iStep=1:NSteps], deg_1[iStep] >= 0*u[iStep])
-    @constraint(M, upper_deg1[iStep=1:NSteps], deg_1[iStep] <= u[iStep]*deg_avg)
+    @constraint(M, lower_deg1[iStep=1:NSteps], deg_1[iStep] >= 0*u1[iStep])
+    @constraint(M, upper_deg1[iStep=1:NSteps], deg_1[iStep] <= u1[iStep]*deg_A)
 
-    @constraint(M, upper_d1[iStep=1:NSteps], d_1[iStep] <= deg_avg*deg_1[iStep])
+    @constraint(M, upper_d1[iStep=1:NSteps], d_1[iStep] <= deg_A*deg_1[iStep])
 
     # UPPER CUTS FOR deg_2 and d_2
-    @constraint(M, lower_deg2[iStep=1:NSteps], deg_2[iStep] >= (1-u[iStep])*deg_avg)
-    @constraint(M, upper_deg2[iStep=1:NSteps], deg_2[iStep] <= (1-u[iStep])*deg_max)
+    @constraint(M, lower_deg2[iStep=1:NSteps], deg_2[iStep] >= u2[iStep]*deg_A)
+    @constraint(M, upper_deg2[iStep=1:NSteps], deg_2[iStep] <= u2[iStep]*deg_B)
 
-    @constraint(M,upper_d2[iStep=1:NSteps], d_2[iStep] <= deg_2[iStep]*(deg_max+deg_avg)-(1-u[iStep])*(deg_max*deg_avg))
+    @constraint(M,upper_d2[iStep=1:NSteps], d_2[iStep] <= deg_2[iStep]*(deg_A+deg_B)-(1-u2[iStep])*(deg_A*deg_B))
+
+    #UPPER CUTS FOR Deg_3 and d_3
+    @constraint(M, lower_deg3[iStep=1:NSteps], deg_3[iStep] >= (1-u1[iStep]-u2[iStep])*deg_B)
+    @constraint(M, upper_deg3[iStep=1:NSteps], deg_3[iStep] <= (1-u1[iStep]-u2[iStep])*deg_max)
+
+    @constraint(M,upper_d3[iStep=1:NSteps], d_3[iStep] <= deg_3[iStep]*(deg_max+deg_B)-(1-u1[iStep]-u2[iStep])*(deg_max*deg_B))
 
     #LOWER CUTS
     @constraint(M, deg_pos_1[iStep=1:NSteps], d[iStep]>= 2*0*deg[iStep]-(0)^2)
@@ -120,11 +124,14 @@ function BuildStageProblem(InputParameters::InputParam, SolverParameters::Solver
         P_aux,
         d,
         deg,
-        u,
+        u1,
+        u2,
         d_1,
         d_2,
+        d_3,
         deg_1,
         deg_2,
+        deg_3,
         soh_final,
         soh_new,
       )

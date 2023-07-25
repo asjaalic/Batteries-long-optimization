@@ -21,8 +21,8 @@ using Rainflow
 # Calls the other Julia files
 include("Structures.jl")
 include("SetInputParameters.jl")
-include("solveOptimizationAlgorithm.jl")
-include("ProblemFormulationCutsTaylor.jl")
+include("solveOptimizationAlgorithm_3cuts.jl")
+include("ProblemFormulationCutsTaylor_3.jl")
 include("Saving in xlsx.jl")
 
 date = string(today())
@@ -41,7 +41,7 @@ to = TimerOutput()
   InputParameters = set_parameters(runMode, case)
   @unpack (NYears, NMonths, NHoursStep, NHoursStage, NStages, NSteps, Big, conv)= InputParameters;
 
-  # Set solver parameters (Cplex etc)
+  # Set solver parameters (Gurobi etc)
   SolverParameters = set_solverParameters()
 
   # Read power prices from a file [€/MWh]
@@ -55,8 +55,8 @@ to = TimerOutput()
   Pp20 = read_csv("prices_2020_8760.csv", case.DataPath);
   Pp21 = read_csv("prices_2021_8760.csv", case.DataPath);
   Pp22 = read_csv("prices_2022_8760.csv", case.DataPath);
-  Pp4 = fill(50,NHoursStage);
-  Pp5 = rand(50.00:0.01:300, NHoursStage);
+  #Pp4 = fill(50,NHoursStage);
+  #Pp5 = rand(50.00:0.01:300, NHoursStage);
   Power_prices = vcat(Pp20',Pp22',Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20');   #  Power_prices = vcat(Pp22',Pp21',Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20'); 
   #Power_prices = vcat(Pp22',Pp21[1:4380],Pp4,Pp20',Pp21',Pp22',Pp20',Pp21',Pp21',Pp22',Pp20')
   
@@ -89,7 +89,7 @@ end
 
 # SAVE DATA IN EXCEL FILES
 if runMode.excel_savings
-  cartella = "C:\\GitSource-Batteries\\Batteries-long-optimization\\Batteries-long-optimization\\Results"
+  cartella = "C:\\GitSource-Batteries\\Batteries-long-optimization RESULTS\\Results"
   cd(cartella)
   Saving = data_saving(InputParameters,ResultsOpt)
 else

@@ -28,11 +28,11 @@ end
   
 # solver parameters
 @with_kw struct SolverParam{F<:Float64,I<:Int}
-    CPX_PARAM_SCRIND::I = 0
-    CPX_PARAM_PREIND::I = 0
-    CPXPARAM_MIP_Tolerances_MIPGap::F = 1e-10
-    CPX_PARAM_TILIM::I = 1000
-    CPX_PARAM_THREADS ::I = 1
+    MIPGap::F 
+    MIPFocus::I
+    Method::F
+    Cuts::F
+    Heuristics::F
 end
   
 # Indirizzi cartelle
@@ -47,14 +47,14 @@ end
 @with_kw mutable struct runModeParam{B<:Bool}
 
     # Solver settings
-    solveMIP::B = false    #If using SOS2
+    solveMIP::B     #If using SOS2
 
-    batterySystemFromFile::B = true
+    batterySystemFromFile::B 
 
     #runMode self defined reading of input 
-    setInputParameters::B = true            #from .in file
+    setInputParameters::B             #from .in file
  
-    excel_savings::B = false
+    excel_savings::B 
 
 end
 
@@ -68,11 +68,15 @@ struct BuildStageProblem
     P_aux::Any
     d::Any
     deg::Any
-    u::Any
+    #u::Any
+    u1::Any
+    u2::Any
     d_1::Any
     d_2::Any
+    d_3::Any
     deg_1::Any
     deg_2::Any
+    deg_3::Any
     soh_final::Any
     soh_new::Any
 end
@@ -92,9 +96,13 @@ struct Results
     deg::Any
     d_1::Any
     d_2::Any
+    d_3::Any
     deg_1::Any
     deg_2::Any
-    u::Any
+    deg_3::Any
+    #u::Any
+    u1::Any
+    u2::Any
     soh_final::Any
     soh_initial::Any
 end
